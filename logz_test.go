@@ -2,6 +2,7 @@ package logz
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -16,7 +17,7 @@ func TestInitWithDefaultOption(t *testing.T) {
 	stdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w // redirect stdout to a pipe
-	Init("")
+	Init("service-name")
 	slog.Info("info")
 	_ = w.Close()
 	out, _ := io.ReadAll(r)
@@ -27,12 +28,12 @@ func TestInitWithDefaultOption(t *testing.T) {
 	err := json.Unmarshal([]byte(strs[0]), &m)
 
 	assert.NoError(t, err)
-	assertBaseFields(t, m, "INFO", "logz initialized", "")
+	assertBaseFields(t, m, "INFO", "logz initialized", "service-name")
 
 	err = json.Unmarshal([]byte(strs[1]), &m)
 
 	assert.NoError(t, err)
-	assertBaseFields(t, m, "INFO", "info", "")
+	assertBaseFields(t, m, "INFO", "info", "service-name")
 }
 
 func TestInitWithWriter(t *testing.T) {
@@ -165,6 +166,22 @@ func TestInitWithReplacer(t *testing.T) {
 	assertBaseFields(t, m, "INFO", "info", "")
 	assert.Equal(t, "j**n d*e", m["name"])
 	assert.Equal(t, "j**n@doe.com", m["email"])
+}
+
+func TestLogContextValue(t *testing.T) {
+	b := bytes.Buffer{}
+	Init("", WithWriter(&b))
+	ctx := AddContext(context.Background(), slog.String("uid", "123"), slog.String("traceID", "456"))
+	slog.InfoContext(ctx, "info")
+	m := map[string]any{}
+	strs := strings.Split(b.String(), "\n")
+
+	err := json.Unmarshal([]byte(strs[1]), &m)
+
+	assert.NoError(t, err)
+	assertBaseFields(t, m, "INFO", "info", "")
+	assert.Equal(t, "123", m["uid"])
+	assert.Equal(t, "456", m["traceID"])
 }
 
 func assertBaseFields(t *testing.T, m map[string]any, level, msg, service string) {
