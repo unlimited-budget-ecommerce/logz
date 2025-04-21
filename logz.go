@@ -5,12 +5,14 @@ import (
 	"os"
 )
 
+// TODO: context to log
+
 // Init initializes the logger with the provided options and set it to slog's default logger.
 // Default writer is set to [os.Stdout] if not provided.
 // Default log level is set to Info if not provided.
 //
 // **You should use the gloabal instance from slog package to log messages.**
-func Init(opts ...option) {
+func Init(serviceName string, opts ...option) {
 	cfg := config{}
 	for _, fn := range opts {
 		fn(&cfg)
@@ -27,7 +29,7 @@ func Init(opts ...option) {
 		Level:       cfg.level,
 		ReplaceAttr: cfg.replacer,
 	}))
-	logger = logger.With(slog.String("service", cfg.serviceName))
+	logger = logger.With(slog.String("service", serviceName))
 	slog.SetDefault(logger)
 
 	slog.Info("logz initialized")

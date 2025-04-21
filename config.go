@@ -12,7 +12,6 @@ type config struct {
 	level           slog.Leveler
 	replacer        func(groups []string, a slog.Attr) slog.Attr
 	replacerEnabled bool
-	serviceName     string
 }
 
 type option func(*config)
@@ -39,7 +38,7 @@ func WithLevel(level string) option {
 
 func WithReplacer(replacer func(groups []string, a slog.Attr) slog.Attr) option {
 	return option(func(cfg *config) {
-		if cfg.replacer != nil {
+		if replacer != nil {
 			cfg.replacer = replacer
 		}
 	})
@@ -48,12 +47,6 @@ func WithReplacer(replacer func(groups []string, a slog.Attr) slog.Attr) option 
 func WithReplacerEnabled(enabled bool) option {
 	return option(func(cfg *config) {
 		cfg.replacerEnabled = enabled
-	})
-}
-
-func WithServiceName(name string) option {
-	return option(func(cfg *config) {
-		cfg.serviceName = name
 	})
 }
 
