@@ -1,10 +1,175 @@
 package logz
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"log/slog"
+	"os"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// TODO: add tests
 func TestInitWithDefaultOption(t *testing.T) {
+	stdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w // redirect stdout to a pipe
+	Init("")
+	slog.Info("info")
+	_ = w.Close()
+	out, _ := io.ReadAll(r)
+	os.Stdout = stdout // restore stdout
+	strs := strings.Split(string(out), "\n")
+	m := map[string]any{}
 
+	err := json.Unmarshal([]byte(strs[0]), &m)
+
+	assert.NoError(t, err)
+	assertBaseFields(t, m, "INFO", "logz initialized", "")
+
+	err = json.Unmarshal([]byte(strs[1]), &m)
+
+	assert.NoError(t, err)
+	assertBaseFields(t, m, "INFO", "info", "")
+}
+
+func TestInitWithWriter(t *testing.T) {
+	b := bytes.Buffer{}
+	Init("", WithWriter(&b))
+	slog.Info("info")
+	m := map[string]any{}
+	strs := strings.Split(b.String(), "\n")
+
+	err := json.Unmarshal([]byte(strs[1]), &m)
+
+	assert.NoError(t, err)
+	assertBaseFields(t, m, "INFO", "info", "")
+}
+
+func TestInitWithCaller(t *testing.T) {
+	b := bytes.Buffer{}
+	Init("", WithWriter(&b), WithCallerEnabled(true))
+	slog.Info("info")
+	m := map[string]any{}
+	strs := strings.Split(b.String(), "\n")
+
+	err := json.Unmarshal([]byte(strs[1]), &m)
+
+	assert.NoError(t, err)
+	assertBaseFields(t, m, "INFO", "info", "")
+	assert.NotEmpty(t, m["source"])
+
+	src, ok := m["source"].(map[string]any)
+
+	assert.True(t, ok)
+	assert.NotZero(t, src["file"])
+	assert.NotZero(t, src["function"])
+	assert.NotZero(t, src["line"])
+}
+
+func TestInitWithLevel(t *testing.T) {
+	// test level debug
+	b := bytes.Buffer{}
+	Init("", WithWriter(&b), WithLevel("debug"))
+	slog.Debug("debug")
+	slog.Info("info")
+	slog.Warn("warn")
+	slog.Error("error")
+	m := map[string]any{}
+
+	strs := strings.Split(b.String(), "\n")
+
+	assert.Len(t, strs, 6) // include newline at the end
+
+	err := json.Unmarshal([]byte(strs[1]), &m)
+
+	assert.NoError(t, err)
+	assertBaseFields(t, m, "DEBUG", "debug", "")
+
+	// test level info
+	b.Reset()
+	Init("", WithWriter(&b), WithLevel("info"))
+	slog.Debug("debug")
+	slog.Info("info")
+	slog.Warn("warn")
+	slog.Error("error")
+
+	strs = strings.Split(b.String(), "\n")
+
+	assert.Len(t, strs, 5)
+
+	err = json.Unmarshal([]byte(strs[1]), &m)
+
+	assert.NoError(t, err)
+	assertBaseFields(t, m, "INFO", "info", "")
+
+	// test level warn
+	b.Reset()
+	Init("", WithWriter(&b), WithLevel("warn"))
+	slog.Debug("debug")
+	slog.Info("info")
+	slog.Warn("warn")
+	slog.Error("error")
+
+	strs = strings.Split(b.String(), "\n")
+
+	assert.Len(t, strs, 3) // init msg won't be logged
+
+	err = json.Unmarshal([]byte(strs[0]), &m)
+
+	assert.NoError(t, err)
+	assertBaseFields(t, m, "WARN", "warn", "")
+
+	// test level error
+	b.Reset()
+	Init("", WithWriter(&b), WithLevel("error"))
+	slog.Debug("debug")
+	slog.Info("info")
+	slog.Warn("warn")
+	slog.Error("error")
+
+	strs = strings.Split(b.String(), "\n")
+
+	assert.Len(t, strs, 2)
+
+	err = json.Unmarshal([]byte(strs[0]), &m)
+
+	assert.NoError(t, err)
+	assertBaseFields(t, m, "ERROR", "error", "")
+}
+
+func TestInitWithReplacer(t *testing.T) {
+	b := bytes.Buffer{}
+	Init(
+		"",
+		WithWriter(&b),
+		WithReplacer(func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == "name" {
+				a.Value = slog.StringValue(MaskName(a.Value.String()))
+			} else if a.Key == "email" {
+				a.Value = slog.StringValue(MaskEmail(a.Value.String()))
+			}
+			return a
+		}),
+		WithReplacerEnabled(true),
+	)
+	slog.With("name", "john doe", "email", "john@doe.com").Info("info")
+	m := map[string]any{}
+	strs := strings.Split(b.String(), "\n")
+
+	err := json.Unmarshal([]byte(strs[1]), &m)
+
+	assert.NoError(t, err)
+	assertBaseFields(t, m, "INFO", "info", "")
+	assert.Equal(t, "j**n d*e", m["name"])
+	assert.Equal(t, "j**n@doe.com", m["email"])
+}
+
+func assertBaseFields(t *testing.T, m map[string]any, level, msg, service string) {
+	assert.NotZero(t, m["time"])
+	assert.Equal(t, level, m["level"])
+	assert.Equal(t, msg, m["msg"])
+	assert.Equal(t, service, m["service"])
 }
