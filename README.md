@@ -15,6 +15,7 @@
 - Configurable
 - Replace field value
 - Context logging
+- Mask sensitive data
 
 ## Installation
 
@@ -73,3 +74,7 @@ ctx = logz.AddContext(ctx, slog.String("traceID", "123"))
 
 slog.InfoContext(ctx, "info") // traceID is included in log.
 ```
+
+Mask sensitive data.
+
+use `logz.MaskXxx` with `logz.WithReplacer` option to auto mask field data
