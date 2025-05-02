@@ -62,7 +62,7 @@ func Init(serviceName string, opts ...option) {
 	logger = logger.With(slog.String("service", serviceName))
 	slog.SetDefault(logger)
 
-	slog.Info("logz initialized")
+	slog.Info("[LOGZ] logz initialized")
 }
 
 // AddContext adds attributes to the context for logging only.
