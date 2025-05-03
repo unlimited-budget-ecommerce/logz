@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"os"
 	"slices"
+
+	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
 )
 
 type (
@@ -50,16 +52,23 @@ func Init(serviceName string, opts ...option) {
 	if !cfg.replacerEnabled {
 		cfg.replacer = nil
 	}
+	if cfg.env == "" {
+		cfg.env = "SIT"
+	}
 
 	logger := slog.New(&logzHandler{slog.NewJSONHandler(
 		cfg.writer,
 		&slog.HandlerOptions{
-			AddSource:   cfg.callerEnabled,
+			AddSource:   cfg.sourceEnabled,
 			Level:       cfg.level,
 			ReplaceAttr: cfg.replacer,
 		}),
 	})
-	logger = logger.With(slog.String("service", serviceName))
+	logger = logger.With(
+		slog.String(string(semconv.ServiceNameKey), serviceName),
+		slog.String(string(semconv.ServiceVersionKey), cfg.serviceVersion),
+		slog.String(string(semconv.DeploymentEnvironmentNameKey), cfg.env),
+	)
 	slog.SetDefault(logger)
 
 	slog.Info("[LOGZ] logz initialized")

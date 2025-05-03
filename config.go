@@ -8,10 +8,12 @@ import (
 
 type config struct {
 	writer          io.Writer
-	callerEnabled   bool
+	sourceEnabled   bool
 	level           slog.Leveler
 	replacer        func(groups []string, a slog.Attr) slog.Attr
 	replacerEnabled bool
+	serviceVersion  string
+	env             string
 }
 
 type option func(*config)
@@ -24,9 +26,9 @@ func WithWriter(w io.Writer) option {
 	})
 }
 
-func WithCallerEnabled(enabled bool) option {
+func WithSourceEnabled(enabled bool) option {
 	return option(func(cfg *config) {
-		cfg.callerEnabled = enabled
+		cfg.sourceEnabled = enabled
 	})
 }
 
@@ -47,6 +49,18 @@ func WithReplacer(replacer func(groups []string, a slog.Attr) slog.Attr) option 
 func WithReplacerEnabled(enabled bool) option {
 	return option(func(cfg *config) {
 		cfg.replacerEnabled = enabled
+	})
+}
+
+func WithServiceVersion(version string) option {
+	return option(func(cfg *config) {
+		cfg.serviceVersion = version
+	})
+}
+
+func WithEnv(env string) option {
+	return option(func(cfg *config) {
+		cfg.env = env
 	})
 }
 

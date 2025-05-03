@@ -28,12 +28,12 @@ func TestInitWithDefaultOption(t *testing.T) {
 	err := json.Unmarshal([]byte(strs[0]), &m)
 
 	assert.NoError(t, err)
-	assertBaseFields(t, m, "INFO", "logz initialized", "service-name")
+	assertBaseFields(t, m, "INFO", "[LOGZ] logz initialized", "service-name", "", "SIT")
 
 	err = json.Unmarshal([]byte(strs[1]), &m)
 
 	assert.NoError(t, err)
-	assertBaseFields(t, m, "INFO", "info", "service-name")
+	assertBaseFields(t, m, "INFO", "info", "service-name", "", "SIT")
 }
 
 func TestInitWithWriter(t *testing.T) {
@@ -46,12 +46,12 @@ func TestInitWithWriter(t *testing.T) {
 	err := json.Unmarshal([]byte(strs[1]), &m)
 
 	assert.NoError(t, err)
-	assertBaseFields(t, m, "INFO", "info", "")
+	assertBaseFields(t, m, "INFO", "info", "", "", "SIT")
 }
 
 func TestInitWithCaller(t *testing.T) {
 	b := bytes.Buffer{}
-	Init("", WithWriter(&b), WithCallerEnabled(true))
+	Init("", WithWriter(&b), WithSourceEnabled(true))
 	slog.Info("info")
 	m := map[string]any{}
 	strs := strings.Split(b.String(), "\n")
@@ -59,7 +59,7 @@ func TestInitWithCaller(t *testing.T) {
 	err := json.Unmarshal([]byte(strs[1]), &m)
 
 	assert.NoError(t, err)
-	assertBaseFields(t, m, "INFO", "info", "")
+	assertBaseFields(t, m, "INFO", "info", "", "", "SIT")
 	assert.NotEmpty(t, m["source"])
 
 	src, ok := m["source"].(map[string]any)
@@ -87,7 +87,7 @@ func TestInitWithLevel(t *testing.T) {
 	err := json.Unmarshal([]byte(strs[1]), &m)
 
 	assert.NoError(t, err)
-	assertBaseFields(t, m, "DEBUG", "debug", "")
+	assertBaseFields(t, m, "DEBUG", "debug", "", "", "SIT")
 
 	// test level info
 	b.Reset()
@@ -104,7 +104,7 @@ func TestInitWithLevel(t *testing.T) {
 	err = json.Unmarshal([]byte(strs[1]), &m)
 
 	assert.NoError(t, err)
-	assertBaseFields(t, m, "INFO", "info", "")
+	assertBaseFields(t, m, "INFO", "info", "", "", "SIT")
 
 	// test level warn
 	b.Reset()
@@ -121,7 +121,7 @@ func TestInitWithLevel(t *testing.T) {
 	err = json.Unmarshal([]byte(strs[0]), &m)
 
 	assert.NoError(t, err)
-	assertBaseFields(t, m, "WARN", "warn", "")
+	assertBaseFields(t, m, "WARN", "warn", "", "", "SIT")
 
 	// test level error
 	b.Reset()
@@ -138,7 +138,7 @@ func TestInitWithLevel(t *testing.T) {
 	err = json.Unmarshal([]byte(strs[0]), &m)
 
 	assert.NoError(t, err)
-	assertBaseFields(t, m, "ERROR", "error", "")
+	assertBaseFields(t, m, "ERROR", "error", "", "", "SIT")
 }
 
 func TestInitWithReplacer(t *testing.T) {
@@ -163,7 +163,7 @@ func TestInitWithReplacer(t *testing.T) {
 	err := json.Unmarshal([]byte(strs[1]), &m)
 
 	assert.NoError(t, err)
-	assertBaseFields(t, m, "INFO", "info", "")
+	assertBaseFields(t, m, "INFO", "info", "", "", "SIT")
 	assert.Equal(t, "j**n d*e", m["name"])
 	assert.Equal(t, "j**n@doe.com", m["email"])
 }
@@ -179,14 +179,18 @@ func TestLogContextValue(t *testing.T) {
 	err := json.Unmarshal([]byte(strs[1]), &m)
 
 	assert.NoError(t, err)
-	assertBaseFields(t, m, "INFO", "info", "")
+	assertBaseFields(t, m, "INFO", "info", "", "", "SIT")
 	assert.Equal(t, "123", m["uid"])
 	assert.Equal(t, "456", m["traceID"])
 }
 
-func assertBaseFields(t *testing.T, m map[string]any, level, msg, service string) {
+func assertBaseFields(
+	t *testing.T,
+	m map[string]any,
+	level, msg, serviceName, serviceVersion, env string,
+) {
 	assert.NotZero(t, m["time"])
 	assert.Equal(t, level, m["level"])
 	assert.Equal(t, msg, m["msg"])
-	assert.Equal(t, service, m["service"])
+	assert.Equal(t, serviceName, m["service.name"])
 }
