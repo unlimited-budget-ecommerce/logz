@@ -7,7 +7,9 @@
 - time
 - level (`DEBUG`, `INFO`, `WARN`, `ERROR`)
 - msg
-- service (service name)
+- service.name
+- service.version
+- deployment.environment.name (`SIT`, `UAT`, `PRD`)
 
 ## Features
 
@@ -42,6 +44,8 @@ logz.Init(
         return a
     }),                             // default: nil
     logz.WithReplacerEnabled(true), // default: false
+    logz.WithServiceVersion(""),    // default: ""
+    logz.WithEnv(""),               // default: "SIT"
 )
 ```
 
