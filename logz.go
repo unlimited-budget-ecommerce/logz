@@ -3,8 +3,8 @@ package logz
 import (
 	"context"
 	"log/slog"
+	"maps"
 	"os"
-	"slices"
 
 	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
 )
@@ -15,9 +15,9 @@ type (
 )
 
 func (h *logzHandler) Handle(ctx context.Context, r slog.Record) error {
-	if attrs, ok := ctx.Value(ctxKey{}).([]slog.Attr); ok {
-		for _, v := range attrs {
-			r.AddAttrs(v)
+	if attrs, ok := ctx.Value(ctxKey{}).(map[string]slog.Value); ok {
+		for k, v := range attrs {
+			r.AddAttrs(slog.Attr{Key: k, Value: v})
 		}
 	}
 
@@ -74,14 +74,22 @@ func Init(serviceName string, opts ...option) {
 	slog.Info("[LOGZ] logz initialized")
 }
 
-// AddContext adds attributes to the context for logging only.
-func AddContext(parent context.Context, attrs ...slog.Attr) context.Context {
+// AddContexts adds attributes to the context for logging only.
+func AddContexts(parent context.Context, attrs ...slog.Attr) context.Context {
 	if parent == nil {
 		parent = context.Background()
 	}
-	if v, ok := parent.Value(ctxKey{}).([]slog.Attr); ok {
-		return context.WithValue(parent, ctxKey{}, slices.Concat(v, attrs))
+
+	var oldAttrs map[string]slog.Value
+	if m, ok := parent.Value(ctxKey{}).(map[string]slog.Value); ok {
+		oldAttrs = m
 	}
 
-	return context.WithValue(parent, ctxKey{}, attrs)
+	newAttrs := make(map[string]slog.Value, len(oldAttrs)+len(attrs))
+	maps.Copy(newAttrs, oldAttrs)
+	for _, a := range attrs {
+		newAttrs[a.Key] = a.Value
+	}
+
+	return context.WithValue(parent, ctxKey{}, newAttrs)
 }

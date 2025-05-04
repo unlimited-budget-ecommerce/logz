@@ -171,7 +171,7 @@ func TestInitWithReplacer(t *testing.T) {
 func TestLogContextValue(t *testing.T) {
 	b := bytes.Buffer{}
 	Init("", WithWriter(&b))
-	ctx := AddContext(context.Background(), slog.String("uid", "123"), slog.String("traceID", "456"))
+	ctx := AddContexts(context.Background(), slog.String("uid", "123"), slog.String("traceID", "456"))
 	slog.InfoContext(ctx, "info")
 	m := map[string]any{}
 	strs := strings.Split(b.String(), "\n")
@@ -193,4 +193,6 @@ func assertBaseFields(
 	assert.Equal(t, level, m["level"])
 	assert.Equal(t, msg, m["msg"])
 	assert.Equal(t, serviceName, m["service.name"])
+	assert.Equal(t, serviceVersion, m["service.version"])
+	assert.Equal(t, env, m["deployment.environment.name"])
 }
