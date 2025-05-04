@@ -74,11 +74,11 @@ Context logging.
 
 ```go
 ctx := context.Background()
-ctx = logz.AddContext(ctx, slog.String("traceID", "123"))
+ctx = logz.AddContexts(ctx, slog.String("trace_id", "123"))
 
-slog.InfoContext(ctx, "info") // traceID is included in log.
+slog.InfoContext(ctx, "info") // trace_id is included in log.
 ```
 
 Mask sensitive data.
 
-use `logz.MaskXxx` with `logz.WithReplacer` option to auto mask field data
+use `logz.MaskXxx` with `logz.WithReplacer` option to mask matched field's data or attach `LogValue` method to a struct to control the log output of that struct.
