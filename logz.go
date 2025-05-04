@@ -9,6 +9,15 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
 )
 
+const (
+	// logging key for otel's trace id
+	TraceKey = "trace_id"
+	// logging key for otel's span id
+	SpanKey = "span_id"
+	// logging key for otel's parent span id
+	ParentSpanKey = "parent_span_id"
+)
+
 type (
 	logzHandler struct{ slog.Handler }
 	ctxKey      struct{}
@@ -37,8 +46,14 @@ func (h *logzHandler) WithGroup(name string) slog.Handler {
 }
 
 // Init initializes the logger with the provided options and set it to slog's default logger.
-// Default writer is set to [os.Stdout] if not provided.
-// Default log level is set to Info if not provided.
+//
+// Default values are:
+//
+// - [os.Stdout] for writer
+//
+// - "INFO" for log level
+//
+// - "SIT" for env
 //
 // **You should use the gloabal instance from slog package to log messages.**
 func Init(serviceName string, opts ...option) {
@@ -74,7 +89,7 @@ func Init(serviceName string, opts ...option) {
 	slog.Info("[LOGZ] logz initialized")
 }
 
-// AddContexts adds attributes to the context for logging only.
+// AddContexts add attributes to the context for logging only.
 func AddContexts(parent context.Context, attrs ...slog.Attr) context.Context {
 	if parent == nil {
 		parent = context.Background()
