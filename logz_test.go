@@ -172,7 +172,7 @@ func TestInitWithReplacer(t *testing.T) {
 func TestLogContextValue(t *testing.T) {
 	b := bytes.Buffer{}
 	Init("", WithWriter(&b))
-	ctx := AddContexts(context.Background(), slog.String("uid", "123"), slog.String("traceID", "456"))
+	ctx := SetContextAttrs(context.Background(), slog.String("uid", "123"), slog.String("trace_id", "456"))
 	slog.InfoContext(ctx, "info")
 	m := map[string]any{}
 	strs := strings.Split(b.String(), "\n")
@@ -182,7 +182,7 @@ func TestLogContextValue(t *testing.T) {
 	assert.NoError(t, err)
 	assertBaseFields(t, m, "INFO", "info", "", "", "SIT")
 	assert.Equal(t, "123", m["uid"])
-	assert.Equal(t, "456", m["traceID"])
+	assert.Equal(t, "456", m["trace_id"])
 }
 
 func TestLogContextWithReplacer(t *testing.T) {
@@ -198,7 +198,7 @@ func TestLogContextWithReplacer(t *testing.T) {
 		}),
 		WithReplacerEnabled(true),
 	)
-	ctx := AddContexts(context.Background(), slog.String("name", "john doe"))
+	ctx := SetContextAttrs(context.Background(), slog.String("name", "john doe"))
 	slog.InfoContext(ctx, "info")
 	m := map[string]any{}
 	strs := strings.Split(b.String(), "\n")
@@ -219,7 +219,7 @@ func TestLogContextConcurrently(t *testing.T) {
 	for i := range numGoroutines {
 		go func(id int) {
 			defer wg.Done()
-			ctx := AddContexts(context.Background(), slog.Int("request_id", id))
+			ctx := SetContextAttrs(context.Background(), slog.Int("request_id", id))
 			slog.InfoContext(ctx, "")
 		}(i)
 	}

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"maps"
 	"os"
+	"strings"
 
 	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
 )
@@ -89,8 +90,10 @@ func Init(serviceName string, opts ...option) {
 	slog.Info("[LOGZ] logz initialized")
 }
 
-// AddContexts add attributes to the context for logging only.
-func AddContexts(parent context.Context, attrs ...slog.Attr) context.Context {
+// SetContextAttrs set key-value attributes to the context for logging.
+//
+// Keys are case insensitive. If the key is already exists, its value will be replaced by the new one.
+func SetContextAttrs(parent context.Context, attrs ...slog.Attr) context.Context {
 	if parent == nil {
 		parent = context.Background()
 	}
@@ -103,7 +106,7 @@ func AddContexts(parent context.Context, attrs ...slog.Attr) context.Context {
 	newAttrs := make(map[string]slog.Value, len(oldAttrs)+len(attrs))
 	maps.Copy(newAttrs, oldAttrs)
 	for _, a := range attrs {
-		newAttrs[a.Key] = a.Value
+		newAttrs[strings.ToLower(a.Key)] = a.Value
 	}
 
 	return context.WithValue(parent, ctxKey{}, newAttrs)
