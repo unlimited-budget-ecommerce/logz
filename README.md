@@ -86,10 +86,14 @@ use `logz.MaskXxx` with `logz.WithReplacer` option to masks matched field's data
 
 ```go
 logz.WithReplacer(func(_ []string, a slog.Attr) slog.Attr {
-    if a.Key == "name" {
+    if strings.ToLower(a.Key) == "name" {
+        // assuming `a.Value` is a string.
+        // **This could panic if `a.Value` is not a string.**
         a.Value = slog.StringValue(logz.MaskName(a.Value.String()))
-    } else if a.Key == "email" {
-        a.Value = slog.StringValue(logz.MaskEmail(a.Value.String()))
+    } else if strings.ToLower(a.Key) == "email" {
+        if a.Value.Kind() == slog.KindString { // ensuring `a.Value` is a string.
+            a.Value = slog.StringValue(logz.MaskEmail(a.Value.String()))
+        }
     }
     return a
 }),
