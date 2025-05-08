@@ -74,11 +74,34 @@ Context logging.
 
 ```go
 ctx := context.Background()
-ctx = logz.AddContexts(ctx, slog.String("trace_id", "123"))
+ctx = logz.SetContextAttrs(ctx, slog.String("trace_id", "123"))
 
 slog.InfoContext(ctx, "info") // trace_id is included in log.
 ```
 
-Mask sensitive data.
+Masking sensitive data.
 
-use `logz.MaskXxx` with `logz.WithReplacer` option to mask matched field's data or attach `LogValue` method to a struct to control the log output of that struct.
+use `logz.MaskXxx` with `logz.WithReplacer` option to masks matched field's data or attach `LogValue` method to a struct to control the log output of that struct.
+
+```go
+logz.WithReplacer(func(_ []string, a slog.Attr) slog.Attr {
+    if a.Key == "name" {
+        a.Value = slog.StringValue(logz.MaskName(a.Value.String()))
+    } else if a.Key == "email" {
+        a.Value = slog.StringValue(logz.MaskEmail(a.Value.String()))
+    }
+    return a
+}),
+```
+
+use `logz.SetReplacerMap` to set replacer map for `logz.MaskMap` to masks those keys's value based on replacer map.
+
+```go
+// This function is unsafe for concurrent calls.
+logz.SetReplacerMap(map[string]func(string) string{
+    "name":  logz.MaskName,
+    "email": logz.MaskEmail,
+})
+
+maskedMap := logz.MaskMap(m)
+```
