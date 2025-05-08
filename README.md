@@ -27,9 +27,10 @@ go get github.com/unlimited-budget-ecommerce/logz
 
 ## Usage
 
-Initialize logz. It also sets the global instance of `log/slog` package.
+### Initializing logz
 
 ```go
+// This function also sets the global instance logger of `log/slog` package.
 logz.Init(
     "service-name",
     logz.WithWriter(os.Stdout),     // default: [os.Stdout]
@@ -49,7 +50,7 @@ logz.Init(
 )
 ```
 
-Basic logging.
+### Basic logging
 
 ```go
 slog.Debug("debug")
@@ -70,7 +71,7 @@ slog.Error("error", slog.Group("req",
 ))
 ```
 
-Context logging.
+### Context logging
 
 ```go
 ctx := context.Background()
@@ -79,7 +80,7 @@ ctx = logz.SetContextAttrs(ctx, slog.String("trace_id", "123"))
 slog.InfoContext(ctx, "info") // trace_id is included in log.
 ```
 
-Masking sensitive data.
+### Masking sensitive data
 
 use `logz.MaskXxx` with `logz.WithReplacer` option to masks matched field's data or attach `LogValue` method to a struct to control the log output of that struct.
 
