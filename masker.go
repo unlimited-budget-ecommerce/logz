@@ -1,6 +1,9 @@
 package logz
 
-import "strings"
+import (
+	"maps"
+	"strings"
+)
 
 func Mask(s string) string {
 	return "****"
@@ -33,4 +36,41 @@ func MaskEmail(s string) string {
 	}
 
 	return name + domain
+}
+
+var replacerMap = make(map[string]func(string) string)
+
+// SetReplacerMap should be called before calling [logz.MaskMap]. Keys are case insensitive.
+//
+// **This function is unsafe for concurrent calls.**
+func SetReplacerMap(m map[string]func(string) string) {
+	for k, v := range m {
+		replacerMap[strings.ToLower(k)] = v
+	}
+}
+
+// MaskMap masks field (case insensitive) based on replacerMap.
+// To set replacerMap, calls [logz.SetReplacerMap].
+func MaskMap(m map[string]any) map[string]any {
+	newMap := maps.Clone(m)
+	for k, v := range newMap {
+		switch v := v.(type) {
+		case string:
+			if fn, ok := replacerMap[strings.ToLower(k)]; ok {
+				newMap[k] = fn(v)
+			}
+		case map[string]any:
+			newMap[k] = MaskMap(v)
+		case []any:
+			for i := range v {
+				vMap, ok := v[i].(map[string]any)
+				if !ok {
+					break // assuming all items has the same type
+				}
+				v[i] = MaskMap(vMap)
+			}
+		}
+	}
+
+	return newMap
 }
