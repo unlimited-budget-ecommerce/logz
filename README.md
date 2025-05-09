@@ -99,14 +99,19 @@ logz.WithReplacer(func(_ []string, a slog.Attr) slog.Attr {
 }),
 ```
 
-use `logz.SetReplacerMap` to set replacer map for `logz.MaskMap` to masks those keys's value based on replacer map.
+use `logz.SetReplacerMap` to set replacer map for `logz.MaskMap` or `logz.MaskHttpHeader` to masks those keys's value based on replacer map.
 
 ```go
-// This function is unsafe for concurrent calls.
+// **This function is unsafe for concurrent calls.**
 logz.SetReplacerMap(map[string]func(string) string{
-    "name":  logz.MaskName,
-    "email": logz.MaskEmail,
+    "name":   logz.MaskName,
+    "email":  logz.MaskEmail,
+    "secret": logz.Mask,
 })
 
+m := make(map[string]any)
 maskedMap := logz.MaskMap(m)
+
+h := make(http.Header)
+maskedHeader := logz.MaskHttpHeader(h)
 ```
