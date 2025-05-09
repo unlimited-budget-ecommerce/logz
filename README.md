@@ -34,7 +34,7 @@ go get github.com/unlimited-budget-ecommerce/logz
 logz.Init(
     "service-name",
     logz.WithWriter(os.Stdout),     // default: [os.Stdout]
-    logz.WithCallerEnabled(true),   // default: false
+    logz.WithSourceEnabled(true),   // default: false
     logz.WithLevel("info"),         // default: "info"
     logz.WithReplacer(func(groups []string, a slog.Attr) slog.Attr {
         if a.Key == "name" {
