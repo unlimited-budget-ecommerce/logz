@@ -216,10 +216,11 @@ func TestLogContextConcurrently(t *testing.T) {
 	const numGoroutines = 20
 	var wg sync.WaitGroup
 	wg.Add(numGoroutines)
+	ctx := context.Background()
 	for i := range numGoroutines {
 		go func(id int) {
 			defer wg.Done()
-			ctx := SetContextAttrs(context.Background(), slog.Int("request_id", id))
+			ctx = SetContextAttrs(ctx, slog.Int("request_id", id))
 			slog.InfoContext(ctx, "")
 		}(i)
 	}
@@ -244,6 +245,9 @@ func TestLogContextConcurrently(t *testing.T) {
 		assert.False(t, seenID[int(reqID)])
 
 		seenID[int(reqID)] = true
+	}
+	for _, seen := range seenID {
+		assert.True(t, seen)
 	}
 }
 
