@@ -2,6 +2,7 @@ package logz
 
 import (
 	"maps"
+	"net/http"
 	"strings"
 )
 
@@ -9,6 +10,11 @@ func Mask(s string) string {
 	return "****"
 }
 
+// Examples:
+//
+//	"John"     -> "J**n"
+//	"John Doe" -> "J**n D*e"
+//	"Jo Do"    -> "** **"
 func MaskName(s string) string {
 	names := strings.Split(s, " ")
 	for i, name := range names {
@@ -22,6 +28,11 @@ func MaskName(s string) string {
 	return strings.Join(names, " ")
 }
 
+// Examples:
+//
+//	"test.mail@gmail.com" -> "t*******l@gmail.com"
+//	"tt@gmail.com"        -> "**@gmail.com"
+//	"email.com"           -> "email.com" // invalid email
 func MaskEmail(s string) string {
 	i := strings.Index(s, "@")
 	if i == -1 {
@@ -40,7 +51,8 @@ func MaskEmail(s string) string {
 
 var replacerMap = make(map[string]func(string) string)
 
-// SetReplacerMap should be called before calling [logz.MaskMap]. Keys are case insensitive.
+// SetReplacerMap should be called before calling [logz.MaskMap] or [logz.MaskHttpHeader].
+// Keys are case insensitive.
 //
 // **This function is unsafe for concurrent calls.**
 func SetReplacerMap(m map[string]func(string) string) {
@@ -49,7 +61,7 @@ func SetReplacerMap(m map[string]func(string) string) {
 	}
 }
 
-// MaskMap masks field (case insensitive) based on replacerMap.
+// MaskMap masks field (keys are case insensitive) based on replacerMap.
 // To set replacerMap, calls [logz.SetReplacerMap].
 func MaskMap(m map[string]any) map[string]any {
 	newMap := maps.Clone(m)
@@ -73,4 +85,17 @@ func MaskMap(m map[string]any) map[string]any {
 	}
 
 	return newMap
+}
+
+// MaskHttpHeader masks field (keys are case insensitive) based on replacerMap.
+// To set replacerMap, calls [logz.SetReplacerMap].
+func MaskHttpHeader(h http.Header) http.Header {
+	newHeader := h.Clone()
+	for k, v := range newHeader {
+		if fn, ok := replacerMap[strings.ToLower(k)]; ok {
+			newHeader[k] = strings.Split(fn(strings.Join(v, ",")), ",")
+		}
+	}
+
+	return newHeader
 }
