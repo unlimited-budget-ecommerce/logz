@@ -58,9 +58,10 @@ func WithServiceVersion(version string) option {
 	})
 }
 
+// WithEnv sets upper case env to config
 func WithEnv(env string) option {
 	return option(func(cfg *config) {
-		cfg.env = env
+		cfg.env = strings.ToUpper(env)
 	})
 }
 
